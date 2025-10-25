@@ -1312,6 +1312,7 @@ public:
 	enum EnvironmentSSAOType {
 		ENV_SSAO_TYPE_ASSAO,
 		ENV_SSAO_TYPE_GTAO,
+		ENV_SSAO_TYPE_SSILVB,
 	};
 
 	virtual void environment_set_ssao_quality(EnvironmentSSAOQuality p_quality, EnvironmentSSAOType p_type, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to) = 0;

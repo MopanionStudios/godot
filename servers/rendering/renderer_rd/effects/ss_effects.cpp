@@ -71,6 +71,7 @@ SSEffects::SSEffects() {
 		}
 
 		ss_effects.gather_constants_buffer = RD::get_singleton()->uniform_buffer_create(sizeof(SSEffectsGatherConstants));
+		ss_effects.depth_constants_buffer = RD::get_singleton()->uniform_buffer_create(sizeof(SSEffectsDepthConstants));
 		SSEffectsGatherConstants gather_constants;
 
 		const int sub_pass_count = 5;
@@ -197,12 +198,13 @@ SSEffects::SSEffects() {
 			ssao_modes.push_back("\n#define SSAO_BASE\n");
 			ssao_modes.push_back("\n#define ADAPTIVE\n");
 			ssao_modes.push_back("\n#define SSAO_TYPE_GTAO\n");
+			ssao_modes.push_back("\n#define SSAO_TYPE_GTAO\n#define GTAO_USE_VIS_BITMASK\n");
 
 			ssao.gather_shader.initialize(ssao_modes);
 
 			ssao.gather_shader_version = ssao.gather_shader.version_create();
 
-			for (int i = 0; i <= SSAO_GATHER_GTAO; i++) {
+			for (int i = 0; i <= SSAO_GATHER_GTAO_VB; i++) {
 				ssao.pipelines[pipeline].create_compute_pipeline(ssao.gather_shader.version_get_shader(ssao.gather_shader_version, i));
 				pipeline++;
 			}
@@ -455,6 +457,7 @@ SSEffects::~SSEffects() {
 
 		RD::get_singleton()->free_rid(ss_effects.mirror_sampler);
 		RD::get_singleton()->free_rid(ss_effects.gather_constants_buffer);
+		RD::get_singleton()->free_rid(ss_effects.depth_constants_buffer);
 	}
 
 	{
@@ -1067,16 +1070,24 @@ void SSEffects::gather_ssao(RD::ComputeListID p_compute_list, const RID *p_ao_sl
 	}
 
 	int variant_id;
-	if (ssao_type == RS::ENV_SSAO_TYPE_GTAO) {
-		variant_id = 3;
-	} else {
-		variant_id = 1;
+	switch (ssao_type) {
+		case RS::ENV_SSAO_TYPE_GTAO:
+			variant_id = 3;
+			break;
+		case RS::ENV_SSAO_TYPE_SSILVB:
+			variant_id = 4;
+			break;
+		default:
+			variant_id = 1;
+			break;
 	}
+
 	RID shader = ssao.gather_shader.version_get_shader(ssao.gather_shader_version, variant_id); //
 
+	bool is_gtao = ssao_type == RS::ENV_SSAO_TYPE_GTAO || ssao_type == RS::ENV_SSAO_TYPE_SSILVB;
 	for (int i = 0; i < 4; i++) {
 		// Only do two pass for GTAO
-		if ((ssao_type == RS::ENV_SSAO_TYPE_GTAO) && ((i == 1) || (i == 2))) {
+		if (is_gtao && ((i == 1) || (i == 2))) {
 			continue;
 		}
 
@@ -1161,11 +1172,49 @@ void SSEffects::generate_ssao(Ref<RenderSceneBuffersRD> p_render_buffers, SSAORe
 		ao_pong_slices[i] = p_render_buffers->get_texture_slice(RB_SCOPE_SSAO, RB_DEINTERLEAVED_PONG, p_view * 4 + i, 0);
 	}
 
+	// Update depth buffer constants
+	{
+		Projection correction;
+		correction.set_depth_correction(false);
+		Projection temp = correction * p_projection;
+
+		float depth_linearize_mul = -temp.columns[3][2];
+		float depth_linearize_add = temp.columns[2][2];
+		if (depth_linearize_mul * depth_linearize_add < 0) {
+			depth_linearize_add = -depth_linearize_add;
+		}
+
+		SSEffectsDepthConstants depth_constants;
+		depth_constants.z_near = depth_linearize_mul;
+		depth_constants.z_far = depth_linearize_add;
+		if (p_projection.is_orthogonal()) {
+			depth_constants.z_near = p_projection.get_z_near();
+			depth_constants.z_far = p_projection.get_z_far();
+
+		}
+		RD::get_singleton()->buffer_update(ss_effects.depth_constants_buffer, 0, sizeof(SSEffectsDepthConstants), &depth_constants);
+	}
+
 	RD::ComputeListID compute_list = RD::get_singleton()->compute_list_begin();
 	memset(&ssao.gather_push_constant, 0, sizeof(SSAOGatherPushConstant));
 	/* FIRST PASS */
 
-	RID shader = ssao.gather_shader.version_get_shader(ssao.gather_shader_version, SSAO_GATHER_ASSAO);
+	int shader_variant;
+	switch (ssao_type) {
+		case RS::ENV_SSAO_TYPE_ASSAO:
+			shader_variant = SSAO_GATHER_ASSAO;
+			break;
+		case RS::ENV_SSAO_TYPE_GTAO:
+			shader_variant = SSAO_GATHER_GTAO;
+			break;
+		case RS::ENV_SSAO_TYPE_SSILVB:
+			shader_variant = SSAO_GATHER_GTAO_VB;
+			break;
+		default:
+			ERR_PRINT("Invalid SSAO type. ");
+			break;
+	}
+	RID shader = ssao.gather_shader.version_get_shader(ssao.gather_shader_version, shader_variant);
 	RID default_sampler = material_storage->sampler_rd_get_default(RS::CANVAS_ITEM_TEXTURE_FILTER_LINEAR, RS::CANVAS_ITEM_TEXTURE_REPEAT_DISABLED);
 
 	RD::get_singleton()->draw_command_begin_label("Process Screen-Space Ambient Occlusion");
@@ -1218,7 +1267,7 @@ void SSEffects::generate_ssao(Ref<RenderSceneBuffersRD> p_render_buffers, SSAORe
 		ssao.gather_push_constant.quality = MAX(0, ssao_quality - 1);
 		ssao.gather_push_constant.size_multiplier = ssao_half_size ? 2 : 1;
 
-		if (ssao_type == RS::ENV_SSAO_TYPE_GTAO) {
+		if (ssao_type == RS::ENV_SSAO_TYPE_GTAO || ssao_type == RS::ENV_SSAO_TYPE_SSILVB) {
 			float inv_tan_half_fov_x = p_projection.columns[0][0];
 			ssao.gather_push_constant.fov_scale = inv_tan_half_fov_x * p_ssao_buffers.buffer_height;
 			ssao.gather_push_constant.thickness_heuristic = p_settings.thickness_heuristic;
@@ -1247,7 +1296,22 @@ void SSEffects::generate_ssao(Ref<RenderSceneBuffersRD> p_render_buffers, SSAORe
 			u_gather_constants_buffer.binding = 2;
 			u_gather_constants_buffer.append_id(ss_effects.gather_constants_buffer);
 
-			gather_uniform_set = uniform_set_cache->get_cache(shader, 0, u_depth_texture_view, u_normal_buffer, u_gather_constants_buffer);
+			if (ssao_type == RS::ENV_SSAO_TYPE_GTAO || ssao_type == RS::ENV_SSAO_TYPE_SSILVB) {
+				RD::Uniform u_fullres_depth;
+				u_fullres_depth.uniform_type = RD::UNIFORM_TYPE_SAMPLER_WITH_TEXTURE;
+				u_fullres_depth.binding = 3;
+				u_fullres_depth.append_id(ss_effects.mirror_sampler);
+				u_fullres_depth.append_id(p_render_buffers->get_depth_texture(p_view));
+
+				RD::Uniform u_depth_constants;
+				u_depth_constants.uniform_type = RD::UNIFORM_TYPE_UNIFORM_BUFFER;
+				u_depth_constants.binding = 4;
+				u_depth_constants.append_id(ss_effects.depth_constants_buffer);
+
+				gather_uniform_set = uniform_set_cache->get_cache(shader, 0, u_depth_texture_view, u_normal_buffer, u_gather_constants_buffer, u_fullres_depth, u_depth_constants);
+			} else {
+				gather_uniform_set = uniform_set_cache->get_cache(shader, 0, u_depth_texture_view, u_normal_buffer, u_gather_constants_buffer);
+			}
 		}
 
 		RID importance_map_uniform_set;
@@ -1328,10 +1392,20 @@ void SSEffects::generate_ssao(Ref<RenderSceneBuffersRD> p_render_buffers, SSAORe
 			RD::get_singleton()->draw_command_end_label(); // Importance Map
 		} else {
 			int pipeline_id;
-			if (ssao_type == RS::ENV_SSAO_TYPE_GTAO) {
-				pipeline_id = SSAO_GATHER_GTAO;
-			} else {
-				pipeline_id = SSAO_GATHER_ASSAO;
+
+			switch (ssao_type) {
+				case RS::ENV_SSAO_TYPE_ASSAO:
+					pipeline_id = SSAO_GATHER_ASSAO;
+					break;
+				case RS::ENV_SSAO_TYPE_GTAO:
+					pipeline_id = SSAO_GATHER_GTAO;
+					break;
+				case RS::ENV_SSAO_TYPE_SSILVB:
+					pipeline_id = SSAO_GATHER_GTAO_VB;
+					break;
+				default:
+					ERR_PRINT("Invalid SSAO type. ");
+					break;
 			}
 			RD::get_singleton()->compute_list_bind_compute_pipeline(compute_list, ssao.pipelines[pipeline_id].get_rid());
 		}
