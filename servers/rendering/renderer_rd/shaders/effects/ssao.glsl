@@ -43,7 +43,7 @@ const int num_taps[5] = { 3, 5, 12, 0, 0 };
 #define SSAO_TILT_SAMPLES_AMOUNT (0.4)
 //
 #define SSAO_HALOING_REDUCTION_ENABLE_AT_QUALITY_PRESET (1) // to disable simply set to 99 or similar
-#define SSAO_HALOING_REDUCTION_AMOUNT (0.8) // values from 0.0 - 1.0, 1.0 means max weighting (will cause artifacts, 0.8 is more reasonable)
+#define SSAO_HALOING_REDUCTION_AMOUNT (0.6) // values from 0.0 - 1.0, 1.0 means max weighting (will cause artifacts, 0.8 is more reasonable)
 //
 #define SSAO_NORMAL_BASED_EDGES_ENABLE_AT_QUALITY_PRESET (2) // to disable simply set to 99 or similar
 #define SSAO_NORMAL_BASED_EDGES_DOT_THRESHOLD (0.5) // use 0-0.1 for super-sharp normal-based edges
@@ -62,7 +62,7 @@ const int num_taps[5] = { 3, 5, 12, 0, 0 };
 //
 #define SSAO_REDUCE_RADIUS_NEAR_SCREEN_BORDER_ENABLE_AT_QUALITY_PRESET (1)
 
-#define SSAO_MAX_TAPS 64
+#define SSAO_MAX_TAPS 32
 #define SSAO_ADAPTIVE_TAP_BASE_COUNT 5
 #define SSAO_ADAPTIVE_TAP_FLEXIBLE_COUNT (SSAO_MAX_TAPS - SSAO_ADAPTIVE_TAP_BASE_COUNT)
 #define SSAO_DEPTH_MIP_LEVELS 4
@@ -71,6 +71,10 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 0) uniform sampler2DArray source_depth_mipmaps;
 layout(rgba8, set = 0, binding = 1) uniform restrict readonly image2D source_normal;
+layout(set = 0, binding = 2) uniform Constants { //get into a lower set
+	vec4 rotation_matrices[20];
+}
+constants;
 
 #ifdef ADAPTIVE
 layout(rg8, set = 1, binding = 0) uniform restrict readonly image2DArray source_ssao;
@@ -96,9 +100,7 @@ layout(push_constant, std430) uniform Params {
 	vec2 NDC_to_view_mul;
 	vec2 NDC_to_view_add;
 
-	//vec2 pad2;
-float far_radius;
-float pad;
+	vec2 pad2;
 	vec2 half_screen_pixel_size_x025;
 
 	float radius;
@@ -120,13 +122,6 @@ float pad;
 	vec2 pass_uv_offset;
 }
 params;
-
-// Interleaved Gradient Noise
-// https://www.iryoku.com/next-generation-post-processing-in-call-of-duty-advanced-warfare
-float quick_hash(vec2 pos) {
-	const vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
-	return fract(magic.z * fract(dot(pos, magic.xy)));
-}
 
 // packing/unpacking for edges; 2 bits per edge mean 4 gradient values (0, 0.33, 0.66, 1) for smoother transitions!
 float pack_edges(vec4 p_edgesLRTB) {
@@ -150,7 +145,6 @@ void calculate_radius_parameters(const float p_pix_center_length, const vec2 p_p
 	const float too_close_limit = clamp(p_pix_center_length * params.inv_radius_near_limit, 0.0, 1.0) * 0.8 + 0.2;
 
 	r_radius *= too_close_limit;
-    r_radius *= 1. + clamp((p_pix_center_length - 2.) * params.far_radius, 0., 1.);
 
 	// 0.85 is to reduce the radius to allow for more samples on a slope to still stay within influence
 	r_lookup_radius = (0.85 * r_radius) / p_pixel_size_at_center.x;
@@ -216,10 +210,10 @@ void SSAOTap(const int p_quality_level, inout float r_obscurance_sum, inout floa
 
 	// patterns
 	{
-		vec4 new_sample = sample_pattern[(p_tap_index + 8 * params.pass) % INTELSSAO_MAIN_DISK_SAMPLE_COUNT];
+		vec4 new_sample = sample_pattern[p_tap_index];
 		sample_offset = new_sample.xy * p_rot_scale;
 		sample_pow_2_len = new_sample.w; // precalculated, same as: sample_pow_2_len = log2( length( new_sample.xy ) );
-		//p_weight_mod *= new_sample.z;
+		p_weight_mod *= new_sample.z;
 	}
 
 	// snap to pixel center (more correct obscurance math, avoids artifacts)
@@ -276,7 +270,7 @@ void generate_SSAO_shadows_internal(out float r_shadow_term, out vec4 r_edges, o
 	uvec2 full_res_coord = upos * 2 * params.size_multiplier + params.pass_coord_offset.xy;
 	vec3 pixel_normal = load_normal(ivec2(full_res_coord));
 
-	const vec2 pixel_size_at_center = NDC_to_view_space(normalized_screen_pos.xy + params.half_screen_pixel_size * 2.0, pix_center_pos.z).xy - pix_center_pos.xy;
+	const vec2 pixel_size_at_center = NDC_to_view_space(normalized_screen_pos.xy + params.half_screen_pixel_size, pix_center_pos.z).xy - pix_center_pos.xy;
 
 	float pixel_lookup_radius;
 	float fallof_sq;
@@ -287,7 +281,10 @@ void generate_SSAO_shadows_internal(out float r_shadow_term, out vec4 r_edges, o
 
 	// calculate samples rotation/scaling
 	mat2 rot_scale_matrix;
+	uint pseudo_random_index;
+
 	{
+		vec4 rotation_scale;
 		// reduce effect radius near the screen edges slightly; ideally, one would render a larger depth buffer (5% on each side) instead
 		if (!p_adaptive_base && (p_quality_level >= SSAO_REDUCE_RADIUS_NEAR_SCREEN_BORDER_ENABLE_AT_QUALITY_PRESET)) {
 			float near_screen_border = min(min(normalized_screen_pos.x, 1.0 - normalized_screen_pos.x), min(normalized_screen_pos.y, 1.0 - normalized_screen_pos.y));
@@ -295,14 +292,10 @@ void generate_SSAO_shadows_internal(out float r_shadow_term, out vec4 r_edges, o
 			pixel_lookup_radius *= near_screen_border;
 		}
 
-		// Update pseudo-random rotation matrix
-		vec2 seed = full_res_coord * 0.333333333; // Multiplier chosen empirically for noise that doesn't exhibit repeating patterns
-		float angle = quick_hash(seed) * 3.14159;
-		float ca = cos(angle);
-		float sa = sin(angle);
-		float r = quick_hash(seed.yx);
-		r = 0.8 + 0.4 * r * r; // Roughly mimicking the scale range generated on the CPU side currently, and prefer closer samples
-		rot_scale_matrix = mat2(ca, sa, -sa, ca) * r * pixel_lookup_radius;
+		// load & update pseudo-random rotation matrix
+		pseudo_random_index = uint(pos_rounded.y * 2 + pos_rounded.x) % 5;
+		rotation_scale = constants.rotation_matrices[params.pass * 5 + pseudo_random_index];
+		rot_scale_matrix = mat2(rotation_scale.x * pixel_lookup_radius, rotation_scale.y * pixel_lookup_radius, rotation_scale.z * pixel_lookup_radius, rotation_scale.w * pixel_lookup_radius);
 	}
 
 	// the main obscurance & sample weight storage
