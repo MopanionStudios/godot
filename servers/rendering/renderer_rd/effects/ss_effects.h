@@ -213,6 +213,12 @@ private:
 		float rotation_matrices[80]; //5 vec4s * 4
 	};
 
+	struct SSEffectsDepthConstants {
+		float z_far;
+		float z_near;
+		float pad[2];
+	};
+
 	struct SSEffectsShader {
 		SSEffectsDownsamplePushConstant downsample_push_constant;
 		SsEffectsDownsampleShaderRD downsample_shader;
@@ -222,6 +228,7 @@ private:
 		bool used_full_mips_last_frame = false;
 
 		RID gather_constants_buffer;
+		RID depth_constants_buffer;
 
 		RID mirror_sampler;
 
@@ -334,6 +341,7 @@ private:
 		SSAO_GATHER_ASSAO_BASE,
 		SSAO_GATHER_ASSAO_ADAPTIVE,
 		SSAO_GATHER_GTAO,
+		SSAO_GATHER_GTAO_VB,
 		SSAO_GENERATE_IMPORTANCE_MAP,
 		SSAO_PROCESS_IMPORTANCE_MAPA,
 		SSAO_PROCESS_IMPORTANCE_MAPB,

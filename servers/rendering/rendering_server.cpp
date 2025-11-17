@@ -3753,7 +3753,7 @@ void RenderingServer::init() {
 	GLOBAL_DEF("rendering/camera/depth_of_field/depth_of_field_use_jitter", false);
 
 	GLOBAL_DEF(PropertyInfo(Variant::INT, "rendering/environment/ssao/quality", PROPERTY_HINT_ENUM, "Very Low (Fast),Low (Fast),Medium (Average),High (Slow),Ultra (Custom)"), 2);
-	GLOBAL_DEF(PropertyInfo(Variant::INT, "rendering/environment/ssao/type", PROPERTY_HINT_ENUM, "ASSAO (Fast),GTAO (Average)"), 0);
+	GLOBAL_DEF(PropertyInfo(Variant::INT, "rendering/environment/ssao/type", PROPERTY_HINT_ENUM, "ASSAO (Fast),GTAO (Average),GT-VBAO (Average)"), 0);
 	GLOBAL_DEF("rendering/environment/ssao/half_size", true);
 	GLOBAL_DEF(PropertyInfo(Variant::FLOAT, "rendering/environment/ssao/adaptive_target", PROPERTY_HINT_RANGE, "0.0,1.0,0.01"), 0.5);
 	GLOBAL_DEF(PropertyInfo(Variant::INT, "rendering/environment/ssao/blur_passes", PROPERTY_HINT_RANGE, "0,6"), 2);
