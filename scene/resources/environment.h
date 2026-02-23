@@ -76,6 +76,12 @@ public:
 		SDFGI_Y_SCALE_100_PERCENT,
 	};
 
+	enum SSILType {
+		SSIL_TYPE_INDIRECT_LIGHTING,
+		SSIL_TYPE_AO,
+		SSIL_TYPE_BOTH,
+	};
+
 	enum FogMode {
 		FOG_MODE_EXPONENTIAL,
 		FOG_MODE_DEPTH,
@@ -142,9 +148,14 @@ private:
 
 	// SSIL
 	bool ssil_enabled = false;
-	float ssil_radius = 5.0;
+	SSILType ssil_type = SSIL_TYPE_INDIRECT_LIGHTING;
+	float ssil_radius = 2.0;
 	float ssil_intensity = 1.0;
-	float ssil_sharpness = 0.98;
+	float ssil_ao_intensity = 1.0;
+	float ssil_ao_effect = 0.5;
+	float ssil_sharpness = 0.95;
+	float ssil_thickness = 0.5;
+	bool ssil_backface_rejection = false;
 	float ssil_normal_rejection = 1.0;
 
 	void _update_ssil();
@@ -314,12 +325,22 @@ public:
 	// SSIL
 	void set_ssil_enabled(bool p_enabled);
 	bool is_ssil_enabled() const;
+	void set_ssil_type(SSILType p_type);
+	SSILType get_ssil_type() const;
 	void set_ssil_radius(float p_radius);
 	float get_ssil_radius() const;
 	void set_ssil_intensity(float p_intensity);
 	float get_ssil_intensity() const;
+	void set_ssil_ao_intensity(float p_ao_intensity);
+	float get_ssil_ao_intensity() const;
+	void set_ssil_ao_effect(float p_ao_effect);
+	float get_ssil_ao_effect() const;
 	void set_ssil_sharpness(float p_sharpness);
 	float get_ssil_sharpness() const;
+	void set_ssil_thickness(float p_thickness);
+	float get_ssil_thickness() const;
+	void set_ssil_backface_rejection_enabled(bool p_backface_rejection);
+	bool is_ssil_backface_rejection_enabled() const;
 	void set_ssil_normal_rejection(float p_normal_rejection);
 	float get_ssil_normal_rejection() const;
 
@@ -457,6 +478,7 @@ VARIANT_ENUM_CAST(Environment::BGMode)
 VARIANT_ENUM_CAST(Environment::AmbientSource)
 VARIANT_ENUM_CAST(Environment::ReflectionSource)
 VARIANT_ENUM_CAST(Environment::ToneMapper)
+VARIANT_ENUM_CAST(Environment::SSILType)
 VARIANT_ENUM_CAST(Environment::SDFGIYScale)
 VARIANT_ENUM_CAST(Environment::GlowBlendMode)
 VARIANT_ENUM_CAST(Environment::FogMode)

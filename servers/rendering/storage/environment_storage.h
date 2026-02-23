@@ -155,9 +155,14 @@ private:
 
 		// SSIL
 		bool ssil_enabled = false;
-		float ssil_radius = 5.0;
+		RSE::EnvironmentSSILType ssil_type = RSE::ENV_SSIL_TYPE_INDIRECT_LIGHTING;
+		float ssil_radius = 2.0;
 		float ssil_intensity = 1.0;
-		float ssil_sharpness = 0.98;
+		float ssil_ao_intensity = 1.0;
+		float ssil_ao_effect = 0.5;
+		float ssil_sharpness = 0.95;
+		float ssil_thickness = 0.5;
+		bool ssil_backface_rejection = false;
 		float ssil_normal_rejection = 1.0;
 
 		// SDFGI
@@ -304,11 +309,16 @@ public:
 	float environment_get_ssao_ao_channel_affect(RID p_env) const;
 
 	// SSIL
-	void environment_set_ssil(RID p_env, bool p_enable, float p_radius, float p_intensity, float p_sharpness, float p_normal_rejection);
+	void environment_set_ssil(RID p_env, bool p_enable, RSE::EnvironmentSSILType p_type, float p_radius, float p_intensity, float p_ao_intensity, float p_ao_effect, float p_sharpness, float p_thickness, bool p_backface_rejection, float p_normal_rejection);
 	bool environment_get_ssil_enabled(RID p_env) const;
+	RSE::EnvironmentSSILType environment_get_ssil_type(RID p_env) const;
 	float environment_get_ssil_radius(RID p_env) const;
 	float environment_get_ssil_intensity(RID p_env) const;
+	float environment_get_ssil_ao_intensity(RID p_env) const;
+	float environment_get_ssil_ao_effect(RID p_env) const;
 	float environment_get_ssil_sharpness(RID p_env) const;
+	float environment_get_ssil_thickness(RID p_env) const;
+	bool environment_get_ssil_backface_rejection_enabled(RID p_env) const;
 	float environment_get_ssil_normal_rejection(RID p_env) const;
 
 	// SDFGI
