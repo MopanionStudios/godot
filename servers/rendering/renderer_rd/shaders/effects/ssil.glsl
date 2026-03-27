@@ -350,7 +350,7 @@ vec4 ssilvb(ivec2 texel, vec2 p_pos, const int p_quality, float raw_depth) {
 
 							vis_bits0 = vis_bits0 & vis_bits_n;
 
-							if(params.normal_rejection > 0.999 && vis_bits0 == 0u) {
+							if (params.normal_rejection > 0.999 && vis_bits0 == 0u) {
 								continue;
 							}
 						}
