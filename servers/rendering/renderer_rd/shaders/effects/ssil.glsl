@@ -275,7 +275,7 @@ vec4 ssilvb(ivec2 texel, vec2 p_pos, const int p_quality, float raw_depth) {
 
 			float d05 = d * 0.5;
 
-			for (float i = 0.0; i < float(count); ++i) {
+			for (int i = 0; i < int(count); ++i) {
 				t1 *= s;
 
 				vec2 sample_pos = ray_start + ray_dir0 * t1;
@@ -349,9 +349,12 @@ vec4 ssilvb(ivec2 texel, vec2 p_pos, const int p_quality, float raw_depth) {
 							vis_bits_n = !flip_t ? ~vis_bits_n : vis_bits_n;
 
 							vis_bits0 = vis_bits0 & vis_bits_n;
+
+							if(params.normal_rejection > 0.999 && vis_bits0 == 0u) {
+								continue;
+							}
 						}
 					}
-
 					vec3 sample_color = texture(last_frame, sample_uv).rgb;
 					// Reduce impact of fireflies by tonemapping before averaging: http://graphicrants.blogspot.com/2013/12/tone-mapping.html
 					sample_color /= (1.0 + dot(sample_color, vec3(0.299, 0.587, 0.114)));
