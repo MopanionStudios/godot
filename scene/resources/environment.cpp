@@ -423,15 +423,6 @@ bool Environment::is_ssil_enabled() const {
 	return ssil_enabled;
 }
 
-void Environment::set_ssil_type(SSILType p_type) {
-	ssil_type = p_type;
-	_update_ssil();
-}
-
-Environment::SSILType Environment::get_ssil_type() const {
-	return ssil_type;
-}
-
 void Environment::set_ssil_radius(float p_radius) {
 	ssil_radius = p_radius;
 	_update_ssil();
@@ -448,24 +439,6 @@ void Environment::set_ssil_intensity(float p_intensity) {
 
 float Environment::get_ssil_intensity() const {
 	return ssil_intensity;
-}
-
-void Environment::set_ssil_ao_intensity(float p_ao_intensity) {
-	ssil_ao_intensity = p_ao_intensity;
-	_update_ssil();
-}
-
-float Environment::get_ssil_ao_intensity() const {
-	return ssil_ao_intensity;
-}
-
-void Environment::set_ssil_ao_effect(float p_ao_effect) {
-	ssil_ao_effect = p_ao_effect;
-	_update_ssil();
-}
-
-float Environment::get_ssil_ao_effect() const {
-	return ssil_ao_effect;
 }
 
 void Environment::set_ssil_sharpness(float p_sharpness) {
@@ -509,11 +482,8 @@ void Environment::_update_ssil() {
 	RS::get_singleton()->environment_set_ssil(
 			environment,
 			ssil_enabled,
-			RSE::EnvironmentSSILType(ssil_type),
 			ssil_radius,
 			ssil_intensity,
-			ssil_ao_intensity,
-			ssil_ao_effect,
 			ssil_sharpness,
 			ssil_thickness,
 			ssil_backface_rejection,
@@ -1429,16 +1399,10 @@ void Environment::_bind_methods() {
 	// SSIL
 	ClassDB::bind_method(D_METHOD("set_ssil_enabled", "enabled"), &Environment::set_ssil_enabled);
 	ClassDB::bind_method(D_METHOD("is_ssil_enabled"), &Environment::is_ssil_enabled);
-	ClassDB::bind_method(D_METHOD("set_ssil_type", "type"), &Environment::set_ssil_type);
-	ClassDB::bind_method(D_METHOD("get_ssil_type"), &Environment::get_ssil_type);
 	ClassDB::bind_method(D_METHOD("set_ssil_radius", "radius"), &Environment::set_ssil_radius);
 	ClassDB::bind_method(D_METHOD("get_ssil_radius"), &Environment::get_ssil_radius);
 	ClassDB::bind_method(D_METHOD("set_ssil_intensity", "intensity"), &Environment::set_ssil_intensity);
 	ClassDB::bind_method(D_METHOD("get_ssil_intensity"), &Environment::get_ssil_intensity);
-	ClassDB::bind_method(D_METHOD("set_ssil_ao_intensity", "ao_intensity"), &Environment::set_ssil_ao_intensity);
-	ClassDB::bind_method(D_METHOD("get_ssil_ao_intensity"), &Environment::get_ssil_ao_intensity);
-	ClassDB::bind_method(D_METHOD("set_ssil_ao_effect", "ao_effect"), &Environment::set_ssil_ao_effect);
-	ClassDB::bind_method(D_METHOD("get_ssil_ao_effect"), &Environment::get_ssil_ao_effect);
 	ClassDB::bind_method(D_METHOD("set_ssil_sharpness", "sharpness"), &Environment::set_ssil_sharpness);
 	ClassDB::bind_method(D_METHOD("get_ssil_sharpness"), &Environment::get_ssil_sharpness);
 	ClassDB::bind_method(D_METHOD("set_ssil_thickness", "thickness"), &Environment::set_ssil_thickness);
@@ -1450,16 +1414,12 @@ void Environment::_bind_methods() {
 
 	ADD_GROUP("SSIL", "ssil_");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "ssil_enabled", PROPERTY_HINT_GROUP_ENABLE), "set_ssil_enabled", "is_ssil_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "ssil_type", PROPERTY_HINT_ENUM, "Indirect Lighting,AO,Both"), "set_ssil_type", "get_ssil_type");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_radius", PROPERTY_HINT_RANGE, "0.01,16,0.01,or_greater,suffix:m"), "set_ssil_radius", "get_ssil_radius");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_intensity", PROPERTY_HINT_RANGE, "0,16,0.01,or_greater"), "set_ssil_intensity", "get_ssil_intensity");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_sharpness", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_sharpness", "get_ssil_sharpness");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_thickness", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_thickness", "get_ssil_thickness");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "ssil_backface_rejection_enabled"), "set_ssil_backface_rejection_enabled", "is_ssil_backface_rejection_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_normal_rejection", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_normal_rejection", "get_ssil_normal_rejection");
-	ADD_SUBGROUP("Ambient Occlusion", "ssil_ao");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_ao_intensity", PROPERTY_HINT_RANGE, "0,16,0.01"), "set_ssil_ao_intensity", "get_ssil_ao_intensity");
-	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_ao_effect", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_ao_effect", "get_ssil_ao_effect");
 
 	// SDFGI
 
@@ -1702,10 +1662,6 @@ void Environment::_bind_methods() {
 
 	BIND_ENUM_CONSTANT(FOG_MODE_EXPONENTIAL);
 	BIND_ENUM_CONSTANT(FOG_MODE_DEPTH);
-
-	BIND_ENUM_CONSTANT(SSIL_TYPE_INDIRECT_LIGHTING);
-	BIND_ENUM_CONSTANT(SSIL_TYPE_AO);
-	BIND_ENUM_CONSTANT(SSIL_TYPE_BOTH);
 
 	BIND_ENUM_CONSTANT(SDFGI_Y_SCALE_50_PERCENT);
 	BIND_ENUM_CONSTANT(SDFGI_Y_SCALE_75_PERCENT);

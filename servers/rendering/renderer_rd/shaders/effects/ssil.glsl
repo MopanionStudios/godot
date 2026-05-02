@@ -174,6 +174,7 @@ vec4 ssilvb(vec2 p_pos, const int p_quality, float p_linear_depth) {
 	vec2 ray_start = viewspace_to_screenspace(vs_pos).xy;
 	vec3 ray_start_vc3 = vec3(ray_start, p_linear_depth);
 
+	float ao = 0.0;
 	vec3 gi = vec3(0.0);
 
 	uint frame = params.frame_index;
@@ -334,7 +335,9 @@ vec4 ssilvb(vec2 p_pos, const int p_quality, float p_linear_depth) {
 				break;
 			}
 		}
+		float occ0 = float(CountBits(occ_bits)) * (1.0 / 32.0);
 
+		ao += 1.0 - occ0;
 		gi += gi0;
 	}
 
@@ -342,7 +345,9 @@ vec4 ssilvb(vec2 p_pos, const int p_quality, float p_linear_depth) {
 	gi *= (1.0 / float(dir_count));
 	gi /= 1.0 - dot(gi, vec3(0.299, 0.587, 0.114));
 	gi *= params.intensity;
-	return vec4(gi, 1.0);
+
+	ao *= (1.0 / float(dir_count));
+	return vec4(gi, ao);
 }
 
 void main() {
