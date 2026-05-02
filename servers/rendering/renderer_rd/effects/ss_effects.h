@@ -104,21 +104,19 @@ public:
 	};
 
 	struct SSILSettings {
-		RSE::EnvironmentSSILType type = RSE::ENV_SSIL_TYPE_INDIRECT_LIGHTING;
-		float radius = 1.0;
+		float radius = 5.0;
 		float intensity = 2.0;
-		float ao_intensity = 1.0;
-		float ao_effect = 0.5;
 		float sharpness = 0.95;
 		float thickness = 0.5;
-		bool backface_rejection = false;
+		bool backface_rejection = true;
 		float normal_rejection = 1.0;
 
 		Size2i full_screen_size;
+		uint32_t frame_index;
 	};
 
 	void ssil_allocate_buffers(Ref<RenderSceneBuffersRD> p_render_buffers, SSILRenderBuffers &p_ssil_buffers, const SSILSettings &p_settings);
-	void screen_space_indirect_lighting(Ref<RenderSceneBuffersRD> p_render_buffers, SSILRenderBuffers &p_ssil_buffers, uint32_t p_view, RID p_normal_buffer, const Projection &p_projection, const Projection &p_corrected_projection, const Projection &p_inv_corrected_projection, const SSILSettings &p_settings);
+	void screen_space_indirect_lighting(Ref<RenderSceneBuffersRD> p_render_buffers, SSILRenderBuffers &p_ssil_buffers, uint32_t p_view, RID p_normal_buffer, const Projection &p_projection, const Projection &p_reprojection, const SSILSettings &p_settings);
 
 	/* SSAO */
 	void ssao_set_quality(RSE::EnvironmentSSAOQuality p_quality, bool p_half_size, float p_adaptive_target, int p_blur_passes, float p_fadeout_from, float p_fadeout_to);
@@ -227,9 +225,6 @@ private:
 
 	enum SSILMode {
 		SSIL_GATHER,
-		SSIL_GATHER_INDIRECT,
-		SSIL_GATHER_AO,
-		SSIL_GATHER_BOTH,
 		SSIL_BLUR_FAST,
 		SSIL_BLUR_ACCURATE,
 		SSIL_MAX
@@ -238,7 +233,7 @@ private:
 	struct SSILGatherPushConstant {
 		int32_t screen_size[2];
 		int quality;
-		int pad1;
+		uint32_t frame_index;
 
 		float z_near;
 		float z_far;
@@ -246,32 +241,22 @@ private:
 		float thickness;
 
 		float intensity;
-		float ao_effect;
+		float normal_rejection;
 		uint32_t backface_rejection;
 		uint32_t is_orthogonal;
 
-		float ao_intensity;
-		float normal_rejection;
+		float NDC_to_view_mul[2];
 		int32_t full_screen_size[2];
 	};
 
 	struct SSILBlurPushConstant {
 		int32_t screen_size[2];
 		float edge_threshold;
-		int quality;
-
-		float z_near;
-		float z_far;
-		float blur_intensity;
-		float depth_difference_threshold;
-
-		float blur_offset[2];
-		int32_t full_screen_size[2];
+		int blur_dir;
 	};
 
 	struct SSILProjectionUniforms {
-		float projection_matrix[16];
-		float inv_projection_matrix[16];
+		float last_frame_reprojection_matrix[16];
 	};
 
 	struct SSIL {

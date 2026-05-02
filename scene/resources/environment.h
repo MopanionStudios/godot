@@ -151,11 +151,9 @@ private:
 	SSILType ssil_type = SSIL_TYPE_INDIRECT_LIGHTING;
 	float ssil_radius = 2.0;
 	float ssil_intensity = 1.0;
-	float ssil_ao_intensity = 1.0;
-	float ssil_ao_effect = 0.5;
 	float ssil_sharpness = 0.95;
 	float ssil_thickness = 0.5;
-	bool ssil_backface_rejection = false;
+	bool ssil_backface_rejection = true;
 	float ssil_normal_rejection = 1.0;
 
 	void _update_ssil();

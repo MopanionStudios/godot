@@ -30,6 +30,7 @@
 
 #pragma once
 
+#include "core/os/thread_safe.h"
 #include "servers/display/display_server.h"
 
 #if defined(RD_ENABLED)
@@ -89,7 +90,7 @@ class DisplayServerAppleEmbedded : public DisplayServer {
 	void initialize_tts() const;
 
 	bool edr_requested = false;
-	void _update_hdr_output();
+	void _update_hdr_output(bool edr_headroom_changed);
 	float _calculate_current_reference_luminance() const;
 
 protected:

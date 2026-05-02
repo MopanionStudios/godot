@@ -1441,11 +1441,18 @@ void RenderForwardClustered::_process_ssil(Ref<RenderSceneBuffersRD> p_render_bu
 	settings.intensity = environment_get_ssil_intensity(p_environment);
 	settings.ao_intensity = environment_get_ssil_ao_intensity(p_environment);
 	settings.sharpness = environment_get_ssil_sharpness(p_environment);
-	settings.ao_effect = environment_get_ssil_ao_effect(p_environment);
 	settings.thickness = environment_get_ssil_thickness(p_environment);
 	settings.backface_rejection = environment_get_ssil_backface_rejection_enabled(p_environment);
 	settings.normal_rejection = environment_get_ssil_normal_rejection(p_environment);
 	settings.full_screen_size = p_render_buffers->get_internal_size();
+	settings.frame_index = 0u;
+
+	bool using_taa = p_render_buffers->get_use_taa();
+	bool using_fsr2 = p_render_buffers->get_scaling_3d_mode() == RSE::VIEWPORT_SCALING_3D_MODE_FSR2;
+
+	if (using_taa || using_fsr2) {
+		settings.frame_index = uint32_t(RSG::rasterizer->get_frame_number() % 64u); // frame % 64 based on author recommendation: https://blog.demofox.org/2022/01/01/interleaved-gradient-noise-a-different-kind-of-low-discrepancy-sequence/
+	}
 
 	ss_effects->ssil_allocate_buffers(p_render_buffers, rb_data->ss_effects_data.ssil, settings);
 
@@ -1456,8 +1463,8 @@ void RenderForwardClustered::_process_ssil(Ref<RenderSceneBuffersRD> p_render_bu
 		Projection correction;
 		correction.set_depth_correction(true);
 		Projection projection = correction * p_projections[v];
-		Projection inverse_projection = projection.inverse();
-		ss_effects->screen_space_indirect_lighting(p_render_buffers, rb_data->ss_effects_data.ssil, v, p_normal_buffers[v], p_projections[v], projection, inverse_projection, settings);
+		Projection last_frame_reprojection = rb_data->ss_effects_data.ssil_last_frame_projections[v] * Projection(rb_data->ss_effects_data.ssil_last_frame_transform.affine_inverse()) * Projection(transform) * projection.inverse();
+		ss_effects->screen_space_indirect_lighting(p_render_buffers, rb_data->ss_effects_data.ssil, v, p_normal_buffers[v], p_projections[v], last_frame_reprojection, settings);
 
 		rb_data->ss_effects_data.ssil_last_frame_projections[v] = projection;
 	}

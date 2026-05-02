@@ -285,14 +285,11 @@ public:
 
 	// SSIL
 
-	virtual void environment_set_ssil(RID p_env, bool p_enable, RSE::EnvironmentSSILType p_type, float p_radius, float p_intensity, float p_ao_intensity, float p_ao_effect, float p_sharpness, float p_thickness, bool p_backface_rejection, float p_normal_rejection) = 0;
+	virtual void environment_set_ssil(RID p_env, bool p_enable, float p_radius, float p_intensity, float p_sharpness, float p_thickness, bool p_backface_rejection, float p_normal_rejection) = 0;
 
 	virtual bool environment_get_ssil_enabled(RID p_env) const = 0;
-	virtual RSE::EnvironmentSSILType environment_get_ssil_type(RID p_env) const = 0;
 	virtual float environment_get_ssil_radius(RID p_env) const = 0;
 	virtual float environment_get_ssil_intensity(RID p_env) const = 0;
-	virtual float environment_get_ssil_ao_intensity(RID p_env) const = 0;
-	virtual float environment_get_ssil_ao_effect(RID p_env) const = 0;
 	virtual float environment_get_ssil_sharpness(RID p_env) const = 0;
 	virtual float environment_get_ssil_thickness(RID p_env) const = 0;
 	virtual bool environment_get_ssil_backface_rejection_enabled(RID p_env) const = 0;
