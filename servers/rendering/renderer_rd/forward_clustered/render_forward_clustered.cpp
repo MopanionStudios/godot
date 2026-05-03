@@ -1436,10 +1436,10 @@ void RenderForwardClustered::_process_ssil(Ref<RenderSceneBuffersRD> p_render_bu
 	RENDER_TIMESTAMP("Process SSIL");
 
 	RendererRD::SSEffects::SSILSettings settings;
-	settings.type = environment_get_ssil_type(p_environment);
 	settings.radius = environment_get_ssil_radius(p_environment);
 	settings.intensity = environment_get_ssil_intensity(p_environment);
 	settings.ao_intensity = environment_get_ssil_ao_intensity(p_environment);
+	settings.ao_effect = environment_get_ssil_ao_effect(p_environment);
 	settings.sharpness = environment_get_ssil_sharpness(p_environment);
 	settings.thickness = environment_get_ssil_thickness(p_environment);
 	settings.backface_rejection = environment_get_ssil_backface_rejection_enabled(p_environment);

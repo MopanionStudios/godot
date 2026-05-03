@@ -63,6 +63,10 @@ layout(push_constant, std430) uniform Params {
 
 	vec2 NDC_to_view_mul;
 	ivec2 full_screen_size;
+
+	float ao_intensity;
+	float ao_effect;
+	vec2 pad;
 }
 params;
 
@@ -341,12 +345,16 @@ vec4 ssilvb(vec2 p_pos, const int p_quality, float p_linear_depth) {
 		gi += gi0;
 	}
 
+	float norm = (1.0 / float(dir_count));
+
 	// inverse tonemap
-	gi *= (1.0 / float(dir_count));
+	gi *= norm;
 	gi /= 1.0 - dot(gi, vec3(0.299, 0.587, 0.114));
 	gi *= params.intensity;
 
-	ao *= (1.0 / float(dir_count));
+	ao *= norm;
+	ao = pow(ao, params.ao_intensity);
+
 	return vec4(gi, ao);
 }
 
@@ -368,6 +376,7 @@ void main() {
 	}
 
 	lighting = ssilvb(uv, params.quality, depth);
+	lighting.a = mix(1.0, lighting.a, params.ao_effect);
 
 	imageStore(dest_image, ssC, lighting);
 }

@@ -441,6 +441,24 @@ float Environment::get_ssil_intensity() const {
 	return ssil_intensity;
 }
 
+void Environment::set_ssil_ao_intensity(float p_ao_intensity) {
+	ssil_ao_intensity = p_ao_intensity;
+	_update_ssil();
+}
+
+float Environment::get_ssil_ao_intensity() const {
+	return ssil_ao_intensity;
+}
+
+void Environment::set_ssil_ao_effect(float p_ao_effect) {
+	ssil_ao_effect = p_ao_effect;
+	_update_ssil();
+}
+
+float Environment::get_ssil_ao_effect() const {
+	return ssil_ao_effect;
+}
+
 void Environment::set_ssil_sharpness(float p_sharpness) {
 	ssil_sharpness = p_sharpness;
 	_update_ssil();
@@ -484,6 +502,8 @@ void Environment::_update_ssil() {
 			ssil_enabled,
 			ssil_radius,
 			ssil_intensity,
+			ssil_ao_intensity,
+			ssil_ao_effect,
 			ssil_sharpness,
 			ssil_thickness,
 			ssil_backface_rejection,
@@ -1403,6 +1423,10 @@ void Environment::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_ssil_radius"), &Environment::get_ssil_radius);
 	ClassDB::bind_method(D_METHOD("set_ssil_intensity", "intensity"), &Environment::set_ssil_intensity);
 	ClassDB::bind_method(D_METHOD("get_ssil_intensity"), &Environment::get_ssil_intensity);
+	ClassDB::bind_method(D_METHOD("set_ssil_ao_intensity", "ao_intensity"), &Environment::set_ssil_ao_intensity);
+	ClassDB::bind_method(D_METHOD("get_ssil_ao_intensity"), &Environment::get_ssil_ao_intensity);
+	ClassDB::bind_method(D_METHOD("set_ssil_ao_effect", "ao_effect"), &Environment::set_ssil_ao_effect);
+	ClassDB::bind_method(D_METHOD("get_ssil_ao_effect"), &Environment::get_ssil_ao_effect);
 	ClassDB::bind_method(D_METHOD("set_ssil_sharpness", "sharpness"), &Environment::set_ssil_sharpness);
 	ClassDB::bind_method(D_METHOD("get_ssil_sharpness"), &Environment::get_ssil_sharpness);
 	ClassDB::bind_method(D_METHOD("set_ssil_thickness", "thickness"), &Environment::set_ssil_thickness);
@@ -1420,6 +1444,9 @@ void Environment::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_thickness", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_thickness", "get_ssil_thickness");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "ssil_backface_rejection_enabled"), "set_ssil_backface_rejection_enabled", "is_ssil_backface_rejection_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_normal_rejection", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_normal_rejection", "get_ssil_normal_rejection");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_ao_intensity", PROPERTY_HINT_RANGE, "0,16,0.01"), "set_ssil_ao_intensity", "get_ssil_ao_intensity");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "ssil_ao_effect", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_ssil_ao_effect", "get_ssil_ao_effect");
+
 
 	// SDFGI
 

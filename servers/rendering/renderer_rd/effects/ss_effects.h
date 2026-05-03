@@ -106,6 +106,8 @@ public:
 	struct SSILSettings {
 		float radius = 5.0;
 		float intensity = 2.0;
+		float ao_intensity = 1.0;
+		float ao_effect = 0.5;
 		float sharpness = 0.95;
 		float thickness = 0.5;
 		bool backface_rejection = true;
@@ -247,6 +249,10 @@ private:
 
 		float NDC_to_view_mul[2];
 		int32_t full_screen_size[2];
+
+		float ao_effect;
+		float ao_intensity;
+		float pad[2];
 	};
 
 	struct SSILBlurPushConstant {

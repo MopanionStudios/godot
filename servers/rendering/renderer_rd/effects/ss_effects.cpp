@@ -702,6 +702,9 @@ void SSEffects::screen_space_indirect_lighting(Ref<RenderSceneBuffersRD> p_rende
 		ssil.gather_push_constant.NDC_to_view_mul[0] = tan_half_fov_x * 2.0;
 		ssil.gather_push_constant.NDC_to_view_mul[1] = tan_half_fov_y * -2.0;
 
+		ssil.gather_push_constant.ao_intensity = p_settings.ao_intensity;
+		ssil.gather_push_constant.ao_effect = p_settings.ao_effect;
+
 		// We are using our uniform cache so our uniform sets are automatically freed when our textures are freed.
 		// It also ensures that we're reusing the right cached entry in a multiview situation without us having to
 		// remember each instance of the uniform set.

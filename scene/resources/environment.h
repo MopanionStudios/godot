@@ -144,6 +144,8 @@ private:
 	bool ssil_enabled = false;
 	float ssil_radius = 2.0;
 	float ssil_intensity = 1.0;
+	float ssil_ao_intensity = 1.0;
+	float ssil_ao_effect = 0.5;
 	float ssil_sharpness = 0.95;
 	float ssil_thickness = 0.5;
 	bool ssil_backface_rejection = true;
@@ -320,6 +322,10 @@ public:
 	float get_ssil_radius() const;
 	void set_ssil_intensity(float p_intensity);
 	float get_ssil_intensity() const;
+	void set_ssil_ao_intensity(float p_ao_intensity);
+	float get_ssil_ao_intensity() const;
+	void set_ssil_ao_effect(float p_ao_effect);
+	float get_ssil_ao_effect() const;
 	void set_ssil_sharpness(float p_sharpness);
 	float get_ssil_sharpness() const;
 	void set_ssil_thickness(float p_thickness);
@@ -463,7 +469,6 @@ VARIANT_ENUM_CAST(Environment::BGMode)
 VARIANT_ENUM_CAST(Environment::AmbientSource)
 VARIANT_ENUM_CAST(Environment::ReflectionSource)
 VARIANT_ENUM_CAST(Environment::ToneMapper)
-VARIANT_ENUM_CAST(Environment::SSILType)
 VARIANT_ENUM_CAST(Environment::SDFGIYScale)
 VARIANT_ENUM_CAST(Environment::GlowBlendMode)
 VARIANT_ENUM_CAST(Environment::FogMode)
